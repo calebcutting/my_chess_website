@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Square Example</title>
+<style>
+    .whitesquare {
+        width: 100px;
+        height: 100px;
+        background-color: white;
+    } 
+    .blacksquare {
+        width: 100px;
+        height: 100px;
+        background-color: black;
+    }
+    .chessboard{
+        width: 800px;
+        height: 800px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .row{
+        display: flex;
+    }
+    .inputbox{
+        width: 500px;
+        height: 100px;
+        background-color: lightblue;
+    }
+    .b1 {
+        background-color: lightblue;
+    }
+    .container {
+        width: 20%;
+        margin: 0 auto;
+        padding-top: 50px;
+    }
+</style>
+</head>
+<body>
+    <!-- Placeholder for the square -->
+    <center>
+    <div class="chessboard" id="squareContainer"></div>
+    <div class="inputbox">
+            <input type="text" id="moveinput" placeholder="Type your message...">
+            <button onclick="makemove()">Send</button>
+    </div>
+        </center>
+        
+    <div class="container">
+        <h1>Chat Room</h1>
+        <div id="messages"></div>
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+    <script>
+        var socket = io();
+        
+        var roomName = '{{ room }}';
+
+        window['turn'] = '{{ turn }}';
+
+        
+        window['boardfen'] = {{ board_fen | tojson }};
+
+        socket.emit('join', { room: roomName });
+        
+        socket.emit('movemade', { boardfen: window['boardfen'], turn1: window['turn'], start: 1 });
+
+
+        socket.on('message', function(data) {
+            var messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+            messageContainer.innerHTML = '<span>opponent:</span> ' + data.message;
+            document.getElementById('messages').appendChild(messageContainer);
+        });
+
+        function sendMessage() {
+            var messageInput = document.getElementById('messageInput');
+            var message = messageInput.value;
+            if (message.trim() !== '') {
+                socket.emit('message', { room: roomName, message: message });
+                messageInput.value = '';
+            }
+        }
+
+        function makemove() {
+            var moveinput = document.getElementById('moveinput');
+            var move = moveinput.value;
+            if (move.trim() !== '') {
+                socket.emit('move', { room: roomName, move: move, boardfen: window['boardfen'], turn: window['turn'] });
+                moveinput.value = '';
+            }
+        }
+
+        socket.on('movemiddle', function(data) {
+            socket.emit('movemade', { boardfen: data.boardfen, turn1: window['turn'], start: 0 });
+        });
+        socket.on('update_board', function(data) {
+            
+            var myDict = data.my_dict;
+            var counter = 0;
+            // Assuming your div has an id of 'myDiv'
+            var divToClear = document.getElementById('squareContainer');
+            
+            divToClear.innerHTML = '';
+            window['boardfen'] = data.boardfen;
+            for (let i = 0; i < 8; i++) {
+                var square_container = document.createElement("div");
+                square_container.classList.add('row');
+                for (let j = 0; j<8; j++)
+                {
+                    // Create a new div element for the square
+                    var square = document.createElement("div");
+
+                    // Set the class for styling
+                    if ((i + j) % 2 === 0){
+                        square.classList.add("whitesquare");
+                    }
+                    else{
+                        square.classList.add("blacksquare");
+                    }
+
+                    // Append the square to the row container
+                    square_container.appendChild(square);
+                    if (myDict[counter] !== undefined) {
+                        let img = new Image();
+                        let piecetype = myDict[counter];
+                        img.src = "{{ url_for('static', filename='images/') }}" + piecetype + '.png';
+                        img.width = 50; // Set the width of the image
+                        img.height = 50; // Set the height of the image
+                        square.appendChild(img);
+                    }
+                    counter++;
+                }
+                // Append the row container to the chessboard container
+                document.getElementById('squareContainer').appendChild(square_container);
+            }
+        });
+    </script>
+</body>
+</html>

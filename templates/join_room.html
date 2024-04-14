@@ -1,0 +1,24 @@
+<style>
+    .div1{
+        background-color: lightgrey;
+        width: 50%;
+        height: 50%;
+    }
+</style>
+<html>
+    <head>
+        Join Room
+    </head>
+    <body>
+    <center>
+        <div class='div1'>
+
+        <form action='/join_room' method='post'>
+            <input type='text' name='roomname'>
+            <button type='submit'>submit</button>
+        </form>
+        <p>{{ warning }}</p>
+        </div>
+    </center>
+    </body>
+</html>
